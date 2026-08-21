@@ -88,38 +88,38 @@ export default function AddCommitmentModal({ isOpen, onClose, onSuccess, userId 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="w-full max-w-md bg-[#0e1322]/95 border border-purple-500/30 rounded-t-3xl sm:rounded-3xl p-6 shadow-[0_0_35px_rgba(147,51,234,0.3)] max-h-[90vh] overflow-y-auto text-gray-100">
+        <div className="flex items-center justify-between pb-3 border-b border-purple-500/20">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
-              <Sparkles className="w-3.5 h-3.5" />
+            <div className="w-7 h-7 rounded-xl bg-purple-900/50 border border-purple-500/40 flex items-center justify-center text-purple-300">
+              <Sparkles className="w-4 h-4" />
             </div>
-            <h3 className="text-sm font-bold text-gray-900">Add Commitment</h3>
+            <h3 className="text-sm font-bold text-white">Log New Commitment</h3>
           </div>
-          <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:text-white transition">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {errorMsg && (
-          <div className="mt-3 p-2.5 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl">
+          <div className="mt-3 p-3 text-xs text-red-300 bg-red-950/40 border border-red-500/30 rounded-xl">
             {errorMsg}
           </div>
         )}
 
-        {/* AI Magic Input Bar */}
-        <div className="mt-4 p-3 bg-purple-50/70 border border-purple-100 rounded-2xl space-y-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 flex items-center gap-1">
-            <Sparkles className="w-3 h-3" /> Quick AI Detection
+        {/* AI Quick Detection Glow Bar */}
+        <div className="mt-4 p-3.5 bg-gradient-to-br from-purple-950/60 to-indigo-950/40 border border-purple-500/40 rounded-2xl space-y-2 shadow-inner">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3 text-yellow-300" /> AI Natural Input
           </span>
           <div className="flex gap-2">
             <input
               type="text"
               value={naturalText}
               onChange={(e) => setNaturalText(e.target.value)}
-              placeholder="e.g. Will email Vikram the sales deck by tomorrow 4pm"
-              className="flex-1 px-3 py-2 bg-white border border-purple-200/70 rounded-xl text-xs text-gray-900 outline-none focus:ring-2 focus:ring-purple-600"
+              placeholder="e.g. Will share the roadmap with Priya tomorrow 3pm"
+              className="flex-1 px-3 py-2 bg-[#090d16] border border-purple-500/30 rounded-xl text-xs text-white placeholder-gray-500 outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -131,7 +131,7 @@ export default function AddCommitmentModal({ isOpen, onClose, onSuccess, userId 
               type="button"
               onClick={handleAIExtract}
               disabled={isExtracting || !naturalText.trim()}
-              className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-xl transition disabled:opacity-50 flex items-center gap-1 shrink-0"
+              className="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-xl transition disabled:opacity-50 flex items-center gap-1 shrink-0 shadow-sm shadow-purple-600/30"
             >
               {isExtracting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Detect'}
             </button>
@@ -140,24 +140,24 @@ export default function AddCommitmentModal({ isOpen, onClose, onSuccess, userId 
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1">
               Who did you promise?
             </label>
             <div className="relative">
-              <User className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+              <User className="absolute left-3 top-3 w-4 h-4 text-purple-400" />
               <input
                 type="text"
                 required
                 value={person}
                 onChange={(e) => setPerson(e.target.value)}
-                placeholder="e.g. Vikram"
-                className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 outline-none focus:ring-2 focus:ring-purple-600 focus:bg-white"
+                placeholder="e.g. Priya"
+                className="w-full pl-9 pr-3 py-2.5 bg-[#090d16] border border-purple-500/20 rounded-xl text-xs text-white placeholder-gray-500 outline-none focus:border-purple-400"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1">
               Promise Action
             </label>
             <textarea
@@ -165,46 +165,46 @@ export default function AddCommitmentModal({ isOpen, onClose, onSuccess, userId 
               rows={2}
               value={action}
               onChange={(e) => setAction(e.target.value)}
-              placeholder="e.g. Email sales deck"
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 outline-none focus:ring-2 focus:ring-purple-600 focus:bg-white resize-none"
+              placeholder="e.g. Share project roadmap"
+              className="w-full px-3 py-2 bg-[#090d16] border border-purple-500/20 rounded-xl text-xs text-white placeholder-gray-500 outline-none focus:border-purple-400 resize-none"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1">
                 Due Date
               </label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
+                <Calendar className="absolute left-3 top-3 w-4 h-4 text-purple-400 pointer-events-none" />
                 <input
                   type="date"
                   required
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full pl-9 pr-2 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 outline-none focus:ring-2 focus:ring-purple-600 focus:bg-white"
+                  className="w-full pl-9 pr-2 py-2 bg-[#090d16] border border-purple-500/20 rounded-xl text-xs text-white outline-none focus:border-purple-400 [color-scheme:dark]"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1">
                 Time
               </label>
               <div className="relative">
-                <Clock className="absolute left-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
+                <Clock className="absolute left-3 top-3 w-4 h-4 text-cyan-400 pointer-events-none" />
                 <input
                   type="time"
                   value={dueTime}
                   onChange={(e) => setDueTime(e.target.value)}
-                  className="w-full pl-9 pr-2 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 outline-none focus:ring-2 focus:ring-purple-600 focus:bg-white"
+                  className="w-full pl-9 pr-2 py-2 bg-[#090d16] border border-purple-500/20 rounded-xl text-xs text-white outline-none focus:border-purple-400 [color-scheme:dark]"
                 />
               </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1">
               Priority
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -215,8 +215,8 @@ export default function AddCommitmentModal({ isOpen, onClose, onSuccess, userId 
                   onClick={() => setPriority(p)}
                   className={`py-2 rounded-xl text-xs font-semibold capitalize border transition ${
                     priority === p
-                      ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                      ? 'bg-purple-600 text-white border-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                      : 'bg-[#090d16] text-gray-400 border-purple-500/20 hover:border-purple-500/40'
                   }`}
                 >
                   {p}
@@ -228,9 +228,9 @@ export default function AddCommitmentModal({ isOpen, onClose, onSuccess, userId 
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-md shadow-purple-500/20"
+            className="w-full mt-2 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(147,51,234,0.35)] border border-purple-400/30"
           >
-            {loading ? 'Saving...' : 'Save Commitment'}
+            {loading ? 'Committing...' : 'Save Cosmic Promise'}
           </button>
         </form>
       </div>
