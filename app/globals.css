@@ -5,21 +5,22 @@
   --foreground: #f3f4f6;
 }
 
-body {
+html, body {
   color: var(--foreground);
   background-color: #080c16;
   font-family: Arial, Helvetica, sans-serif;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Seamless Full-Viewport Galaxy Background */
+/* Optimized Galaxy Background */
 .galaxy-bg {
   background-color: #080c16;
   background-image: 
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(147, 51, 234, 0.25), transparent 70%),
-    radial-gradient(ellipse 60% 40% at 85% 60%, rgba(59, 130, 246, 0.15), transparent 70%),
-    radial-gradient(ellipse 70% 50% at 15% 90%, rgba(168, 85, 247, 0.18), transparent 70%);
-  background-attachment: local;
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(147, 51, 234, 0.22), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 85% 60%, rgba(59, 130, 246, 0.12), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 15% 90%, rgba(168, 85, 247, 0.15), transparent 70%);
 }
 
 /* Star Dust Effect */
@@ -35,9 +36,39 @@ body {
   background-size: 350px 350px;
 }
 
-/* Glass Card */
+/* High-Performance Card (Removed heavy GPU live-blur) */
 .glass-panel {
-  background-color: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background-color: rgba(14, 19, 34, 0.75);
+  border: 1px solid rgba(168, 85, 247, 0.18);
+  contain: content;
+}
+
+/* Smooth Hardware-Accelerated Scrolling */
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  will-change: scroll-position;
+  transform: translateZ(0);
+}
+
+/* Universal Scrollbar Hide */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+}
+
+* {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }

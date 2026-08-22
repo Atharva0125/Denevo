@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { X, Calendar, Clock, User, Sparkles, Loader2 } from 'lucide-react';
+import { X, Sparkles, Plus, AlertCircle, Loader2 } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -13,226 +13,238 @@ interface Props {
 
 export default function AddCommitmentModal({ isOpen, onClose, onSuccess, userId }: Props) {
   const [naturalText, setNaturalText] = useState('');
-  const [person, setPerson] = useState('');
-  const [action, setAction] = useState('');
-  const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
-  const [dueTime, setDueTime] = useState('10:00');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
-  
-  const [isExtracting, setIsExtracting] = useState(false);
+  const [isAiMode, setIsAiMode] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Manual Form State
+  const [person, setPerson] = useState('');
+  const [action, setAction] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [dueTime, setDueTime] = useState('');
+
   if (!isOpen) return null;
 
-  const handleAIExtract = async () => {
+  const handleAiExtract = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!naturalText.trim()) return;
-    setIsExtracting(true);
+
+    setLoading(true);
     setErrorMsg('');
 
     try {
-      const res = await fetch('/api/extract-promise', {
+      const res = await fetch('/api/extract-commitment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: naturalText }),
       });
 
-      const result = await res.json();
+      const extracted = await res.json();
 
-      if (!res.ok || result.error) {
-        throw new Error(result.error || 'Failed to extract');
+      if (!extracted.person || !extracted.action) {
+        throw new Error('Could not identify person or commitment. Please try manual entry.');
       }
 
-      const { person, action, due_date, due_time, priority } = result.data;
-      if (person) setPerson(person);
-      if (action) setAction(action);
-      if (due_date) setDueDate(due_date);
-      if (due_time) setDueTime(due_time);
-      if (priority) setPriority(priority);
+      const { error } = await supabase.from('commitments').insert({
+        user_id: userId,
+        person: extracted.person,
+        action: extracted.action,
+        due_date: extracted.due_date || new Date().toISOString().split('T')[0],
+        due_time: extracted.due_time || null,
+        priority: 'none', // Default fast capture without decision friction
+        status: 'pending',
+        raw_text: naturalText,
+      });
+
+      if (error) throw error;
+
+      setNaturalText('');
+      onSuccess();
+      onClose();
     } catch (err: any) {
-      setErrorMsg(err.message || 'AI extraction failed. Please fill manually.');
+      setErrorMsg(err.message || 'Failed to process AI commitment');
     } finally {
-      setIsExtracting(false);
+      setLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!person.trim() || !action.trim() || !dueDate) return;
+
     setLoading(true);
     setErrorMsg('');
 
-    const rawText = naturalText || `Promised ${person} to ${action}`;
+    try {
+      const formattedTime = dueTime ? (dueTime.length === 5 ? `${dueTime}:00` : dueTime) : null;
 
-    const { error } = await supabase.from('commitments').insert({
-      user_id: userId,
-      person,
-      action,
-      due_date: dueDate,
-      due_time: dueTime ? (dueTime.length === 5 ? `${dueTime}:00` : dueTime) : null,
-      priority,
-      status: 'pending',
-      raw_text: rawText,
-    });
+      const { error } = await supabase.from('commitments').insert({
+        user_id: userId,
+        person: person.trim(),
+        action: action.trim(),
+        due_date: dueDate,
+        due_time: formattedTime,
+        priority: 'none', // Default fast capture without decision friction
+        status: 'pending',
+        raw_text: null,
+      });
 
-    setLoading(false);
+      if (error) throw error;
 
-    if (error) {
-      setErrorMsg(error.message);
-    } else {
-      setNaturalText('');
       setPerson('');
       setAction('');
+      setDueDate('');
+      setDueTime('');
       onSuccess();
       onClose();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to add commitment');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="w-full max-w-md bg-[#0e1322]/95 border border-purple-500/30 rounded-t-3xl sm:rounded-3xl p-6 shadow-[0_0_35px_rgba(147,51,234,0.3)] max-h-[90vh] overflow-y-auto text-gray-100">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="w-full max-w-sm bg-[#0e1322]/95 border border-purple-500/30 rounded-t-3xl sm:rounded-3xl p-5 shadow-[0_0_35px_rgba(147,51,234,0.25)] text-gray-100 animate-in slide-in-from-bottom duration-200 space-y-4">
+        
+        {/* Header & Mode Switch */}
         <div className="flex items-center justify-between pb-3 border-b border-purple-500/20">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-xl bg-purple-900/50 border border-purple-500/40 flex items-center justify-center text-purple-300">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <h3 className="text-sm font-bold text-white">Log New Commitment</h3>
+            <button
+              onClick={() => setIsAiMode(true)}
+              className={`text-xs font-bold px-2.5 py-1 rounded-xl transition flex items-center gap-1.5 ${
+                isAiMode
+                  ? 'bg-purple-600 text-white shadow-[0_0_10px_rgba(168,85,247,0.4)]'
+                  : 'text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>AI Promise</span>
+            </button>
+            <button
+              onClick={() => setIsAiMode(false)}
+              className={`text-xs font-bold px-2.5 py-1 rounded-xl transition ${
+                !isAiMode
+                  ? 'bg-purple-600 text-white shadow-[0_0_10px_rgba(168,85,247,0.4)]'
+                  : 'text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              Manual
+            </button>
           </div>
           <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:text-white transition">
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {errorMsg && (
-          <div className="mt-3 p-3 text-xs text-red-300 bg-red-950/40 border border-red-500/30 rounded-xl">
-            {errorMsg}
+          <div className="p-2.5 text-[11px] text-red-300 bg-red-950/60 border border-red-500/40 rounded-xl flex items-center gap-1.5">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-400" />
+            <span>{errorMsg}</span>
           </div>
         )}
 
-        {/* AI Quick Detection Glow Bar */}
-        <div className="mt-4 p-3.5 bg-gradient-to-br from-purple-950/60 to-indigo-950/40 border border-purple-500/40 rounded-2xl space-y-2 shadow-inner">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
-            <Sparkles className="w-3 h-3 text-yellow-300" /> AI Natural Input
-          </span>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={naturalText}
-              onChange={(e) => setNaturalText(e.target.value)}
-              placeholder="e.g. Will share the roadmap with Priya tomorrow 3pm"
-              className="flex-1 px-3 py-2 bg-[#090d16] border border-purple-500/30 rounded-xl text-xs text-white placeholder-gray-500 outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAIExtract();
-                }
-              }}
-            />
-            <button
-              type="button"
-              onClick={handleAIExtract}
-              disabled={isExtracting || !naturalText.trim()}
-              className="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-xl transition disabled:opacity-50 flex items-center gap-1 shrink-0 shadow-sm shadow-purple-600/30"
-            >
-              {isExtracting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Detect'}
-            </button>
-          </div>
-        </div>
+        {isAiMode ? (
+          <form onSubmit={handleAiExtract} className="space-y-3">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-purple-300/70 mb-1">
+                Tell Denevo your commitment
+              </label>
+              <textarea
+                rows={3}
+                required
+                value={naturalText}
+                onChange={(e) => setNaturalText(e.target.value)}
+                placeholder="e.g., I'll send Rahul the project plan tomorrow at 5 PM."
+                className="w-full p-3 bg-[#090d16] border border-purple-500/20 rounded-2xl text-xs text-white placeholder-gray-500 outline-none focus:border-purple-400 resize-none transition"
+              />
+            </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
-          <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1">
-              Who did you promise?
-            </label>
-            <div className="relative">
-              <User className="absolute left-3 top-3 w-4 h-4 text-purple-400" />
+            <button
+              type="submit"
+              disabled={loading || !naturalText.trim()}
+              className="w-full py-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(147,51,234,0.4)] border border-purple-400/30 transition active:scale-[0.98] disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-purple-300" />
+                  <span>✦ Understanding your commitment...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 text-yellow-300" />
+                  <span>Capture with AI</span>
+                </>
+              )}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleManualSubmit} className="space-y-2.5">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
+                Person / Entity
+              </label>
               <input
                 type="text"
                 required
                 value={person}
                 onChange={(e) => setPerson(e.target.value)}
-                placeholder="e.g. Priya"
-                className="w-full pl-9 pr-3 py-2.5 bg-[#090d16] border border-purple-500/20 rounded-xl text-xs text-white placeholder-gray-500 outline-none focus:border-purple-400"
+                placeholder="e.g., Rahul"
+                className="w-full px-3 py-2 bg-[#090d16] border border-purple-500/20 rounded-xl text-xs text-white outline-none focus:border-purple-400"
               />
             </div>
-          </div>
 
-          <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1">
-              Promise Action
-            </label>
-            <textarea
-              required
-              rows={2}
-              value={action}
-              onChange={(e) => setAction(e.target.value)}
-              placeholder="e.g. Share project roadmap"
-              className="w-full px-3 py-2 bg-[#090d16] border border-purple-500/20 rounded-xl text-xs text-white placeholder-gray-500 outline-none focus:border-purple-400 resize-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1">
-                Due Date
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
+                Action / Promise
               </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-3 w-4 h-4 text-purple-400 pointer-events-none" />
+              <input
+                type="text"
+                required
+                value={action}
+                onChange={(e) => setAction(e.target.value)}
+                placeholder="e.g., Send quotation"
+                className="w-full px-3 py-2 bg-[#090d16] border border-purple-500/20 rounded-xl text-xs text-white outline-none focus:border-purple-400"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
+                  Due Date
+                </label>
                 <input
                   type="date"
                   required
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full pl-9 pr-2 py-2 bg-[#090d16] border border-purple-500/20 rounded-xl text-xs text-white outline-none focus:border-purple-400 [color-scheme:dark]"
+                  className="w-full px-2.5 py-2 bg-[#090d16] border border-purple-500/20 rounded-xl text-xs text-white outline-none focus:border-purple-400 [color-scheme:dark]"
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1">
-                Time
-              </label>
-              <div className="relative">
-                <Clock className="absolute left-3 top-3 w-4 h-4 text-cyan-400 pointer-events-none" />
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
+                  Due Time
+                </label>
                 <input
                   type="time"
                   value={dueTime}
                   onChange={(e) => setDueTime(e.target.value)}
-                  className="w-full pl-9 pr-2 py-2 bg-[#090d16] border border-purple-500/20 rounded-xl text-xs text-white outline-none focus:border-purple-400 [color-scheme:dark]"
+                  className="w-full px-2.5 py-2 bg-[#090d16] border border-purple-500/20 rounded-xl text-xs text-white outline-none focus:border-purple-400 [color-scheme:dark]"
                 />
               </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1">
-              Priority
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {(['low', 'medium', 'high'] as const).map((p) => (
-                <button
-                  type="button"
-                  key={p}
-                  onClick={() => setPriority(p)}
-                  className={`py-2 rounded-xl text-xs font-semibold capitalize border transition ${
-                    priority === p
-                      ? 'bg-purple-600 text-white border-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.4)]'
-                      : 'bg-[#090d16] text-gray-400 border-purple-500/20 hover:border-purple-500/40'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-2 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(147,51,234,0.35)] border border-purple-400/30"
-          >
-            {loading ? 'Committing...' : 'Save Cosmic Promise'}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-2 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(147,51,234,0.35)]"
+            >
+              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+              <span>Save Commitment</span>
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

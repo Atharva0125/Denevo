@@ -18,23 +18,34 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMsg('');
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password,
+      });
 
-    setLoading(false);
+      if (error) {
+        setErrorMsg(error.message);
+        setLoading(false);
+        return;
+      }
 
-    if (error) {
-      setErrorMsg(error.message);
-    } else {
-      router.push('/dashboard');
+      if (data?.session) {
+        // Direct navigation guarantees session cookie registration
+        window.location.href = '/dashboard';
+      } else {
+        setErrorMsg('Please check your email to confirm your account before signing in.');
+        setLoading(false);
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'An unexpected error occurred.');
+      setLoading(false);
     }
   };
 
   return (
     <div className="flex-1 flex flex-col justify-between bg-[#0b0f19] text-gray-100 p-6 min-h-screen relative overflow-hidden">
-      {/* Subtle ambient glow */}
+      {/* Ambient glow */}
       <div className="absolute -top-24 -right-24 w-60 h-60 bg-purple-600/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 -left-24 w-60 h-60 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
 
@@ -51,7 +62,6 @@ export default function LoginPage() {
 
       {/* Center Container */}
       <div className="w-full max-w-sm mx-auto my-auto z-10 space-y-6">
-        {/* Brand Header */}
         <div className="text-center space-y-2">
           <div className="w-10 h-10 mx-auto rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-white shadow-[0_0_20px_rgba(147,51,234,0.4)] border border-purple-400/30">
             <Orbit className="w-5 h-5" />
@@ -67,14 +77,13 @@ export default function LoginPage() {
 
         {/* Error Alert */}
         {errorMsg && (
-          <div className="p-3 text-xs text-red-300 bg-red-950/40 border border-red-500/30 rounded-2xl animate-shake">
+          <div className="p-3 text-xs text-red-300 bg-red-950/60 border border-red-500/40 rounded-2xl">
             {errorMsg}
           </div>
         )}
 
         {/* Form Card */}
         <form onSubmit={handleLogin} className="bg-[#121827]/80 backdrop-blur-xl border border-purple-500/20 rounded-3xl p-5 shadow-2xl space-y-3.5">
-          {/* Email Address */}
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
               Email Address
@@ -92,7 +101,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Password */}
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
               Password
@@ -110,7 +118,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
@@ -131,7 +138,6 @@ export default function LoginPage() {
         </form>
       </div>
 
-      {/* Bottom Footer Note */}
       <div className="text-center text-[10px] text-gray-500 z-10">
         &copy; 2026 Denevo AI. Secure executive storage.
       </div>
